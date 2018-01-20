@@ -99,3 +99,8 @@ class Level:
 					return self.tiles[x][y]
 
 		return None
+
+	def renderMixers(self):
+		# Use list of mixer tiles to draw their graphics
+		for mixer in self.mixers:
+			self.tiles[mixer[0]][mixer[1]].renderMixer()
