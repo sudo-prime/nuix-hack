@@ -22,10 +22,13 @@ while running:
 	                running = False
 
 	level1.render()
-
 	tileUnderMouse = level1.getTileByCoord(pygame.mouse.get_pos())
 
+	# Tile hover color change
 	if tileUnderMouse is not None:
 		level1.getTileByCoord(pygame.mouse.get_pos()).renderHover()
+		# Tile being clicked color change
+		if pygame.mouse.get_pressed()[0]:
+			level1.getTileByCoord(pygame.mouse.get_pos()).renderClick()
 
 	pygame.display.flip()

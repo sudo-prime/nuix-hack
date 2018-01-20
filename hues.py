@@ -13,4 +13,5 @@ MAGENTA =    pygame.Color(255, 0, 255),
 WHITE =      pygame.Color(255, 255, 255),
 GRAY =       pygame.Color(175, 175, 175),
 LIGHT_GRAY = pygame.Color(245, 245, 245),
+MED_GRAY =   pygame.Color(235, 235, 235),
 BLACK =      pygame.Color(0, 0, 0)
