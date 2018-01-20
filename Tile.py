@@ -9,5 +9,7 @@ class Tile:
 		self.col = col
 		self.row = row
 		self.size = size
+		self.s = s
 
-		pygame.draw.rect(s, hues.GRAY, pygame.Rect(x + 10, y + 10, size - 20, size - 20))
+	def renderHover(self):
+		pygame.draw.rect(self.s, hues.LIGHT_GRAY, pygame.Rect(self.x + 1, self.y + 1, self.size - 1, self.size - 1))

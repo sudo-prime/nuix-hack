@@ -1,6 +1,6 @@
 import pygame
 import Event
-import Level
+from Level import Level
 import hues
 
 width = 1280
@@ -8,15 +8,24 @@ height = 720
 
 pygame.init()
 surface = pygame.display.set_mode((width, height))
+clock = pygame.time.Clock()
 running = True
 
-pygame.Surface.fill(surface, hues.WHITE)
-level1 = Level.Level(surface, 3, 3, 100, width, height)
-level1.begin()
+level1 = Level(surface, 4, 4, 100, width, height)
 
 while running:
-        for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                        running = False
+	clock.tick(60)
+	surface.fill(hues.WHITE)
 
-        pygame.display.flip()
+	for event in pygame.event.get():
+	        if event.type == pygame.QUIT:
+	                running = False
+
+	level1.render()
+
+	tileUnderMouse = level1.getTileByCoord(pygame.mouse.get_pos())
+
+	if tileUnderMouse is not None:
+		level1.getTileByCoord(pygame.mouse.get_pos()).renderHover()
+
+	pygame.display.flip()
