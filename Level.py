@@ -2,6 +2,7 @@ import pygame
 import hues
 from Tile import Tile
 from ColorNode import ColorNode
+import copy
 
 class Level:
 	def __init__(self, s, cols, rows, tileSize, screenWidth, screenHeight, colornodes, mixers, exitpoints):
@@ -28,6 +29,8 @@ class Level:
 		self.colornodes = colornodes
 		self.mixers = mixers
 		self.exitpoints = exitpoints
+
+		self.complete = False
 
 		for y in range(-1, self.rows + 1):
 			for x in range(-1, self.cols + 1):
@@ -56,6 +59,7 @@ class Level:
 			self.tiles[info["col"]][info["row"]].exitPointHue = info["hue"]
 			self.tiles[info["col"]][info["row"]].isExitPoint = True
 			self.tiles[info["col"]][info["row"]].occupied = False
+			self.tiles[info["col"]][info["row"]].solved = False
 
 	def renderColorNodes(self):
 		for info in self.colornodes:
@@ -97,35 +101,42 @@ class Level:
 							(self.x + self.width + self.lineOff, self.y + self.tileSize * row),
 							 self.lineWidth)
 
+	def renderLevelComplete(self):
+		# TODO: make something other than console message
+		print("Level Solved!")
+
 	def refreshEntryPoints(self):
 		for x in range(-1, len(self.tiles)-1):
 			for y in range(-1, len(self.tiles[x])-1):
 				if self.tiles[x][y].mixer and len(self.tiles[x][y].connectingColors) > 0:
 					newColor = hues.average(self.tiles[x][y].connectingColors)
-					if y - 1 <= 0:
-						if not self.tiles[x][y-1].occupied and self.tiles[x][y-1].entryPoint is None:
-							self.tiles[x][y].colorNodeHue = newColor
-							self.tiles[x][y].isColorNode = True
-							self.tiles[x][y].entryPoint = self.tiles[x][y]
-							self.colornodes.append({"hue": newColor, "col": x, "row": y})
-					if y + 1 > self.rows:
-						if not self.tiles[x][y+1].occupied and self.tiles[x][y+1].entryPoint is None:
-							self.tiles[x][y].colorNodeHue = newColor
-							self.tiles[x][y].isColorNode = True
-							self.tiles[x][y].entryPoint = self.tiles[x][y]
-							self.colornodes.append({"hue": newColor, "col": x, "row": y})
-					if x - 1 <= 0:
-						if not self.tiles[x-1][y].occupied and self.tiles[x-1][y].entryPoint is None:
-							self.tiles[x][y].colorNodeHue = newColor
-							self.tiles[x][y].isColorNode = True
-							self.tiles[x][y].entryPoint = self.tiles[x][y]
-							self.colornodes.append({"hue": newColor, "col": x, "row": y})
-					if x + 1 > self.cols:
-						if not self.tiles[x+1][y].occupied and self.tiles[x+1][y].entryPoint is None:
-							self.tiles[x][y].colorNodeHue = newColor
-							self.tiles[x][y].isColorNode = True
-							self.tiles[x][y].entryPoint = self.tiles[x][y]
-							self.colornodes.append({"hue": newColor, "col": x, "row": y})
+
+					if self.tiles[x][y-1].entryPoint is None:
+						self.tiles[x][y].colorNodeHue = newColor
+						self.tiles[x][y].isColorNode = True
+						self.tiles[x][y].entryPoint = self.tiles[x][y]
+						self.colornodes.append({"hue": newColor, "col": x, "row": y})
+					# if y + 1 > self.rows:
+					# 	print 2
+					# 	if not self.tiles[x][y+1].occupied and self.tiles[x][y+1].entryPoint is None:
+					# 		self.tiles[x][y].colorNodeHue = newColor
+					# 		self.tiles[x][y].isColorNode = True
+					# 		self.tiles[x][y].entryPoint = self.tiles[x][y]
+					# 		self.colornodes.append({"hue": newColor, "col": x, "row": y})
+					# if x - 1 <= 0:
+					# 	print 3
+					# 	if not self.tiles[x-1][y].occupied and self.tiles[x-1][y].entryPoint is None:
+					# 		self.tiles[x][y].colorNodeHue = newColor
+					# 		self.tiles[x][y].isColorNode = True
+					# 		self.tiles[x][y].entryPoint = self.tiles[x][y]
+					# 		self.colornodes.append({"hue": newColor, "col": x, "row": y})
+					# if x + 1 > self.cols:
+					# 	print 4
+					# 	if not self.tiles[x+1][y].occupied and self.tiles[x+1][y].entryPoint is None:
+					# 		self.tiles[x][y].colorNodeHue = newColor
+					# 		self.tiles[x][y].isColorNode = True
+					# 		self.tiles[x][y].entryPoint = self.tiles[x][y]
+					# 		self.colornodes.append({"hue": newColor, "col": x, "row": y})
 
 
 	def dict2D(self, cols, rows):
@@ -135,3 +146,10 @@ class Level:
 			for y in range(-1, rows + 1):
 				d[x][y] = 0
 		return d
+
+	def levelIsSolved(self):
+		for exitpoint in self.exitpoints:
+			if exitpoint["solved"] == False:
+				return False
+
+		return True

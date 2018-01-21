@@ -21,6 +21,7 @@ class Tile:
 		self.exitPointHue = None
 		self.connectingColors = []
 		self.isColorNode = False
+		self.solved = None
 
 	def renderDebugSquare(self):
 		pygame.draw.rect(self.s, hues.BLACK, pygame.Rect(self.x + 10, self.y + 10, self.size - 20, self.size - 20))
