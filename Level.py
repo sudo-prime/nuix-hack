@@ -1,10 +1,10 @@
 import pygame
-from pygame import gfxdraw
 import hues
 from Tile import Tile
+from ColorNode import ColorNode
 
 class Level:
-	def __init__(self, s, cols, rows, tileSize, screenWidth, screenHeight, colornodes, mixers):
+	def __init__(self, s, cols, rows, tileSize, screenWidth, screenHeight, colornodes, mixers, exitpoints):
 		# Here's where I will get level dimensions and starting points / hues
 		self.cols = cols
 		self.rows = rows
@@ -22,17 +22,15 @@ class Level:
 		self.lineOff = 30
 		self.lineWidth = 1
 
-		self.tiles =    [[0 for y in range(rows)] for x in range(cols)]
-		self.tileSpan = [[0 for y in range(rows)] for x in range(cols)]
+		self.tiles =    self.dict2D(self.cols, self.rows)
+		self.tileSpan = self.dict2D(self.cols, self.rows)
 
 		self.colornodes = colornodes
 		self.mixers = mixers
+		self.exitpoints = exitpoints
 
-		print(str(len(self.tiles[0])) + "," + str(len(self.tiles)))
-
-
-		for y in range(0, self.rows):
-			for x in range(0, self.cols):
+		for y in range(-1, self.rows + 1):
+			for x in range(-1, self.cols + 1):
 				self.tiles[x][y] = Tile(self.x + self.tileSize * x,
 				 						self.y + self.tileSize * y,
 										x, y, s, self.tileSize)
@@ -42,14 +40,51 @@ class Level:
 												  self.tileSize,
 								  				  self.tileSize)
 
+				if (x == -1) or (y == -1) or (x == self.cols) or (y == self.rows):
+					# Initialize tile as an outside tile
+					self.tiles[x][y].occupied = True
 
-	def render(self):
-		# Here's where pygame graphics will be drawn, and level will start
+		for info in self.colornodes:
+			self.tiles[info["col"]][info["row"]].colorNodeHue = info["hue"]
+			self.tiles[info["col"]][info["row"]].isColorNode = True
+			self.tiles[info["col"]][info["row"]].entryPoint = self.tiles[info["col"]][info["row"]]
 
-		# First, populate a matrix of Tile objects
+		for mixer in self.mixers:
+			self.tiles[mixer[0]][mixer[1]].mixer = True
+
+		for info in self.exitpoints:
+			self.tiles[info["col"]][info["row"]].exitPointHue = info["hue"]
+			self.tiles[info["col"]][info["row"]].isExitPoint = True
+			self.tiles[info["col"]][info["row"]].occupied = False
+
+	def renderColorNodes(self):
+		for info in self.colornodes:
+			# Render colornode circles
+			self.tiles[info["col"]][info["row"]].renderColorNode()
+
+	def renderMixers(self):
+		# And render mixer nodes
+		for mixer in self.mixers:
+			self.tiles[mixer[0]][mixer[1]].renderMixer()
+
+	def renderExitPoints(self):
+		for info in self.exitpoints:
+			self.tiles[info["col"]][info["row"]].renderExitPoint()
+
+
+	def getTileByCoord(self, mousePos):
+		# Pass in x and y of mos pos, get tile obj under it
+		for y in range(-1, self.rows + 1):
+			for x in range(-1, self.cols + 1):
+				if self.tileSpan[x][y].collidepoint(mousePos):
+					return self.tiles[x][y]
+
+		return None
+
+	def renderLevelLines(self):
 		for col in range(0, self.cols + 1):
 			pygame.draw.line(self.s,
-							 hues.GRAY,
+							 hues.MED_GRAY,
 			 				(self.x + self.tileSize * col, self.y - self.lineOff),
 			 				(self.x + self.tileSize * col, self.y + self.height + self.lineOff),
 							self.lineWidth)
@@ -57,50 +92,46 @@ class Level:
 		# Store the area they cover, as well - for use in determining hover
 		for row in range(0, self.rows + 1):
 			pygame.draw.line(self.s,
-			 				 hues.GRAY,
+			 				 hues.MED_GRAY,
 							(self.x - self.lineOff, self.y + self.tileSize * row),
 							(self.x + self.width + self.lineOff, self.y + self.tileSize * row),
 							 self.lineWidth)
 
-		# Then, render colornodes
-		for node in self.colornodes:
-			pygame.gfxdraw.filled_circle(self.s,
-								   		(self.x + self.tileSize * node.col) + self.tileSize / 2,
-										(self.y + self.tileSize * node.row) + self.tileSize / 2,
-								   		13, node.hue)
+	def refreshEntryPoints(self):
+		for x in range(-1, len(self.tiles)-1):
+			for y in range(-1, len(self.tiles[x])-1):
+				if self.tiles[x][y].mixer and len(self.tiles[x][y].connectingColors) > 0:
+					newColor = hues.average(self.tiles[x][y].connectingColors)
+					if y - 1 <= 0:
+						if not self.tiles[x][y-1].occupied and self.tiles[x][y-1].entryPoint is None:
+							self.tiles[x][y].colorNodeHue = newColor
+							self.tiles[x][y].isColorNode = True
+							self.tiles[x][y].entryPoint = self.tiles[x][y]
+							self.colornodes.append({"hue": newColor, "col": x, "row": y})
+					if y + 1 > self.rows:
+						if not self.tiles[x][y+1].occupied and self.tiles[x][y+1].entryPoint is None:
+							self.tiles[x][y].colorNodeHue = newColor
+							self.tiles[x][y].isColorNode = True
+							self.tiles[x][y].entryPoint = self.tiles[x][y]
+							self.colornodes.append({"hue": newColor, "col": x, "row": y})
+					if x - 1 <= 0:
+						if not self.tiles[x-1][y].occupied and self.tiles[x-1][y].entryPoint is None:
+							self.tiles[x][y].colorNodeHue = newColor
+							self.tiles[x][y].isColorNode = True
+							self.tiles[x][y].entryPoint = self.tiles[x][y]
+							self.colornodes.append({"hue": newColor, "col": x, "row": y})
+					if x + 1 > self.cols:
+						if not self.tiles[x+1][y].occupied and self.tiles[x+1][y].entryPoint is None:
+							self.tiles[x][y].colorNodeHue = newColor
+							self.tiles[x][y].isColorNode = True
+							self.tiles[x][y].entryPoint = self.tiles[x][y]
+							self.colornodes.append({"hue": newColor, "col": x, "row": y})
 
-			pygame.gfxdraw.aacircle(self.s,
-								   (self.x + self.tileSize * node.col) + self.tileSize / 2,
-								   (self.y + self.tileSize * node.row) + self.tileSize / 2,
-								   13, node.hue)
 
-			# DONT FORGET TO ADD LINE HERE CONNECTING TO GRID
-
-			# Next, set tiles next to colornodes as entryPoints
-			if node.direction == "UP":
-				self.tiles[node.col][node.row - 1].entryPoint = node
-			elif node.direction == "DOWN":
-				self.tiles[node.col][node.row + 1].entryPoint = node
-			elif node.direction == "LEFT":
-				self.tiles[node.col - 1][node.row].entryPoint = node
-			elif node.direction == "RIGHT":
-				self.tiles[node.col + 1][node.row].entryPoint = node
-
-			# And render mixer nodes
-			for mixer in self.mixers:
-				self.tiles[mixer[0]][mixer[1]].mixer = True
-
-
-	def getTileByCoord(self, mousePos):
-		# Pass in x and y of mos pos, get tile obj under it
-		for y in range(0, self.rows):
-			for x in range(0, self.cols):
-				if self.tileSpan[x][y].collidepoint(mousePos):
-					return self.tiles[x][y]
-
-		return None
-
-	def renderMixers(self):
-		# Use list of mixer tiles to draw their graphics
-		for mixer in self.mixers:
-			self.tiles[mixer[0]][mixer[1]].renderMixer()
+	def dict2D(self, cols, rows):
+		d = dict()
+		for x in range(-1, cols + 1):
+			d[x] = dict()
+			for y in range(-1, rows + 1):
+				d[x][y] = 0
+		return d
