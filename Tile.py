@@ -24,14 +24,14 @@ class Tile:
 		self.solved = None
 
 	def printTileInfo(self):
-		print self.mixer
-		print self.isColorNode
-		print self.entryPoint
-		print self.colorNodeHue
-		print self.solved
-		print self.exitPointHue
-		print self.connectingColors
-		print self.mixerColor
+		print (self.mixer)
+		print (self.isColorNode)
+		print (self.entryPoint)
+		print (self.colorNodeHue)
+		print (self.solved)
+		print (self.exitPointHue)
+		print (self.connectingColors)
+		print (self.mixerColor)
 
 	def renderObstacle(self):
 		pygame.draw.rect(self.s, hues.MED_GRAY, pygame.Rect(self.x + 1, self.y + 1, self.size - 1, self.size - 1))
@@ -61,7 +61,7 @@ class Tile:
 		self.mixerColor = hues.average(self.connectingColors)
 
 	def renderMixer(self):
-		# Re-calculate mixercolor depending on connectingColors
+		# Re-calculate mixercolor depending on connectingColors\
 		self.mixerColor = hues.average(self.connectingColors)
 		# Draw mixer node, if the tile has one!
 		if self.mixer:

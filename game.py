@@ -27,15 +27,15 @@ for i in range(0, 240):
 	frameObjs.append(pygame.image.load(str('00000'[:4 - len(str(i))+1] + str(i) + '.png')))
 
 # Create various flags to keep track of what's going on in the game.
-colors = []           # Array for storing colors of established connections.
-connected = []        # Array of established connections.
-points = []           # The center points of all (valid) tiles the user has dragged through.
-firstClick = True     # Whether it's the frame on which the user has clicked for the first time
+colors = []		   # Array for storing colors of established connections.
+connected = []		# Array of established connections.
+points = []		   # The center points of all (valid) tiles the user has dragged through.
+firstClick = True	 # Whether it's the frame on which the user has clicked for the first time
 firstTile = False	  # Whether the tile being clicked (and that is under the mouse) is the first tile
-prevTile = None       # Holds reference to the last tile the user was on, checked every frame - unless
+prevTile = None	   # Holds reference to the last tile the user was on, checked every frame - unless
 					  # the user dragged to another, this will be none. Otherwise, it'll be a tile object.
-prevTileRef = None    # Same thing as prevTile, but this object remains unchanged until later in the
-				      # code, so that it can still be referenced.
+prevTileRef = None	# Same thing as prevTile, but this object remains unchanged until later in the
+					  # code, so that it can still be referenced.
 levelNum = -2		  # The ID of the level the user is currently on. (-2 is title screen.)
 clicking = False	  # Used to detect rising edge of mouse click, helps avoid unintended button presses.
 prevClicking = False  # See above.
@@ -67,7 +67,7 @@ buttonController = ButtonController(surface, buttons[levelNum])
 # Grouped by level ID on which they are displayed.
 colornodes = {
 	1: [
-		{"hue": hues.RED, "col": -1, "row": 0}
+		{"hue": hues.GREEN, "col": -1, "row": 0}
 	],
 	2: [
 		{"hue": hues.RED, "col": -1, "row": 0}
@@ -89,8 +89,8 @@ colornodes = {
 	],
 	7: [
 		{"hue": hues.RED, "col": 3, "row": 0},
-		{"hue": hues.YELLOW, "col": 2, "row": 1},
-		{"hue": hues.BLUE, "col": 3, "row": 2}
+		{"hue": hues.GREEN, "col": 2, "row": 1},
+		{"hue": hues.INDIGO, "col": 3, "row": 2}
 	]
 }
 
@@ -139,7 +139,7 @@ obstacles = {
 # Grouped by level ID on which they are displayed.
 exitpoints = {
 	1: [
-		{"hue": pygame.Color(255, 0, 0, 255), "col": 1, "row": 0, "solved": False}
+		{"hue": hues.GREEN, "col": 1, "row": 0, "solved": False}
 	],
 	2: [
 		{"hue": pygame.Color(255, 0, 0, 255), "col": 0, "row": -1, "solved": False},
@@ -347,24 +347,23 @@ while running:
 
 		tileUnderMouse = level.getTileByCoord(pygame.mouse.get_pos())
 
-		# DEBUG
-		# Renders debug squares over entry points
+		# DEBUG: Renders debug squares over entry points
 		# for x in range(-1, len(level.tiles)-1):
-		# 	for y in range(-1, len(level.tiles[x])-1):
-		# 		if level.tiles[x][y].entryPoint is not None:
-		# 			level.tiles[x][y].renderDebugSquare()
+		#	 for y in range(-1, len(level.tiles[x])-1):
+		#		 if level.tiles[x][y].entryPoint is not None:
+		#			 level.tiles[x][y].renderDebugSquare()
 
-		# For rendering debug square on occupied tiles
+		# DEBUG: Renders debug square on occupied tiles
 		# for x in range(-1, len(level.tiles)-1):
-		# 	for y in range(-1, len(level.tiles[x])-1):
-		# 		if level.tiles[x][y].occupied:
-		# 			level.tiles[x][y].renderDebugSquare()
+		#	 for y in range(-1, len(level.tiles[x])-1):
+		#		 if level.tiles[x][y].occupied:
+		#			 level.tiles[x][y].renderDebugSquare()
 
-		# For rendering debug square on solved tiles
+		# DEBUG: Renders debug square on solved tiles
 		# for x in range(-1, len(level.tiles)-1):
-		# 	for y in range(-1, len(level.tiles[x])-1):
-		# 		if level.tiles[x][y].solved:
-		# 			level.tiles[x][y].renderDebugSquare()
+		#	 for y in range(-1, len(level.tiles[x])-1):
+		#		 if level.tiles[x][y].solved:
+		#			 level.tiles[x][y].renderDebugSquare()
 
 		if tileUnderMouse is not None: #if tile under mouse exists
 			tileUnderMouse.renderHover()
@@ -377,9 +376,9 @@ while running:
 							firstClick = False
 							prevTileRef = tileUnderMouse
 							points.append(((level.x + level.tileSize * tileUnderMouse.entryPoint.col) + level.tileSize / 2,
-										   (level.y + level.tileSize * tileUnderMouse.entryPoint.row) + level.tileSize / 2))
+											(level.y + level.tileSize * tileUnderMouse.entryPoint.row) + level.tileSize / 2))
 							color = level.getTileByCoord(points[0]).colorNodeHue
-							print color
+							print(color)
 
 					newTile = tileUnderMouse
 
@@ -417,19 +416,17 @@ while running:
 									 or (newTile is rightTile)
 									 or (newTile is upTile)
 									 or (newTile is downTile)):
-									 	if (not newTile.occupied) or newTile.mixer:
-											print (not prevTileRef.isExitPoint)
-											print (not prevTileRef.mixer or firstTile or not prevTileRef.isExitPoint)
-											if (not prevTileRef.mixer or firstTile) and not prevTileRef.isExitPoint:
-												if level.getTileByCoord(points[0]).mixer:
-						 						    #Tile is a mixer, and now color is being selected from it so it needs to be converted to a color node
-						 							level.convertTileToColorNode(level.getTileByCoord(points[0]))
-													wasMixer = True
-												prevTile = newTile
-												prevTileRef = newTile
-												points.append(((level.x + level.tileSize * tileUnderMouse.col) + level.tileSize / 2,
-							   								   (level.y + level.tileSize * tileUnderMouse.row) + level.tileSize / 2))
-												firstClick = False
+										 if (not newTile.occupied) or newTile.mixer:
+											 if (not prevTileRef.mixer or firstTile) and (not prevTileRef.isExitPoint):
+												 if level.getTileByCoord(points[0]).mixer:
+													 #Tile is a mixer, and now color is being selected from it so it needs to be converted to a color node
+													 level.convertTileToColorNode(level.getTileByCoord(points[0]))
+													 wasMixer = True
+												 prevTile = newTile
+												 prevTileRef = newTile
+												 points.append(((level.x + level.tileSize * tileUnderMouse.col) + level.tileSize / 2,
+																(level.y + level.tileSize * tileUnderMouse.row) + level.tileSize / 2))
+												 firstClick = False
 
 					if len(points) > 1:
 						pygame.draw.lines(surface, color, False, points, 6)
