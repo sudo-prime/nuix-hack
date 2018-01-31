@@ -1,9 +1,10 @@
 import pygame # Module used for all graphics.
+from Hue import Hue
 from Level import Level # Custom level class, used for tracking tiles and drawing level elements to screen.
 from Button import Button # Custom button class. For clicking!
 from ButtonController import ButtonController # Button Controller class handles drawing and keeping track of all buttons.
 import hues # Module that contains some pre-defined color assignments and color-handling methods
-import copy # Module used to copy level details / defaults, gets around python pass-by-name for mutable objects
+from copy import deepcopy # Module used to copy level details / defaults, gets around python pass-by-name for mutable objects
 
 
 width = 1600 # The width (px) of the screen.
@@ -27,14 +28,14 @@ for i in range(0, 240):
 	frameObjs.append(pygame.image.load(str('00000'[:4 - len(str(i))+1] + str(i) + '.png')))
 
 # Create various flags to keep track of what's going on in the game.
-colors = []		   # Array for storing colors of established connections.
-connected = []		# Array of established connections.
-points = []		   # The center points of all (valid) tiles the user has dragged through.
-firstClick = True	 # Whether it's the frame on which the user has clicked for the first time
+colors = []		      # Array for storing colors of established connections.
+connected = []		  # Array of established connections.
+points = []		      # The center points of all (valid) tiles the user has dragged through.
+firstClick = True	  # Whether it's the frame on which the user has clicked for the first time
 firstTile = False	  # Whether the tile being clicked (and that is under the mouse) is the first tile
-prevTile = None	   # Holds reference to the last tile the user was on, checked every frame - unless
+prevTile = None	      # Holds reference to the last tile the user was on, checked every frame - unless
 					  # the user dragged to another, this will be none. Otherwise, it'll be a tile object.
-prevTileRef = None	# Same thing as prevTile, but this object remains unchanged until later in the
+prevTileRef = None	  # Same thing as prevTile, but this object remains unchanged until later in the
 					  # code, so that it can still be referenced.
 levelNum = -2		  # The ID of the level the user is currently on. (-2 is title screen.)
 clicking = False	  # Used to detect rising edge of mouse click, helps avoid unintended button presses.
@@ -67,7 +68,7 @@ buttonController = ButtonController(surface, buttons[levelNum])
 # Grouped by level ID on which they are displayed.
 colornodes = {
 	1: [
-		{"hue": hues.GREEN, "col": -1, "row": 0}
+		{"hue": hues.RED, "col": -1, "row": 0}
 	],
 	2: [
 		{"hue": hues.RED, "col": -1, "row": 0}
@@ -84,13 +85,13 @@ colornodes = {
 		{"hue": hues.YELLOW, "col": -1, "row": 0}
 	],
 	6: [
-		{"hue": hues.INDIGO, "col": -1, "row": 1},
+		{"hue": hues.BLUE, "col": -1, "row": 1},
 		{"hue": hues.RED, "col": 4, "row": 1}
 	],
 	7: [
 		{"hue": hues.RED, "col": 3, "row": 0},
 		{"hue": hues.GREEN, "col": 2, "row": 1},
-		{"hue": hues.INDIGO, "col": 3, "row": 2}
+		{"hue": hues.ORANGE, "col": 3, "row": 2}
 	]
 }
 
@@ -139,37 +140,50 @@ obstacles = {
 # Grouped by level ID on which they are displayed.
 exitpoints = {
 	1: [
-		{"hue": hues.GREEN, "col": 1, "row": 0, "solved": False}
+		{"hue": hues.RED, "col": 1, "row": 0, "solved": False}
 	],
 	2: [
-		{"hue": pygame.Color(255, 0, 0, 255), "col": 0, "row": -1, "solved": False},
-		{"hue": pygame.Color(255, 0, 0, 255), "col": 0, "row": 1, "solved": False}
+		{"hue": Hue(255, 0, 0, 1), "col": 0, "row": -1, "solved": False},
+		{"hue": Hue(255, 0, 0, 1), "col": 0, "row": 1, "solved": False}
 	],
 	3: [
-		{"hue": pygame.Color(255, 0, 0, 255), "col": 1, "row": -1, "solved": False}
+		{"hue": Hue(255, 0, 0, 1), "col": 1, "row": -1, "solved": False}
 	],
 	4: [
-		{"hue": pygame.Color(255, 127, 0, 255), "col": 0, "row": -1, "solved": False}
+		{"hue": Hue(255, 128, 0, 2), "col": 0, "row": -1, "solved": False}
 	],
 	5: [
 		{"hue": hues.YELLOW, "col": 0, "row": -1, "solved": False},
-		{"hue": pygame.Color(127, 191, 127, 255), "col": 1, "row": -1, "solved": False},
-		{"hue": pygame.Color(127, 191, 127, 255), "col": 1, "row": 1, "solved": False}
+		{"hue": hues.GREEN, "col": 1, "row": -1, "solved": False},
+		{"hue": hues.GREEN, "col": 1, "row": 1, "solved": False}
 	],
 	6: [
-		{"hue": pygame.Color(63, 0, 191, 255), "col": 2, "row": 1, "solved": False},
+		{"hue": Hue(128, 0, 255, 3), "col": 2, "row": 1, "solved": False},
 	],
 	7: [
-		{"hue": pygame.Color(127, 191, 127, 255), "col": 2, "row": 0, "solved": False},
-		{"hue": pygame.Color(127, 64, 127, 255), "col": 3, "row": 1, "solved": False}
+		{"hue": Hue(127, 191, 127, 1), "col": 2, "row": 0, "solved": False},
+		{"hue": Hue(127, 64, 127, 1), "col": 3, "row": 1, "solved": False}
+	]
+}
+
+subtractors = {
+	1: [ ],
+	2: [ ],
+	3: [ ],
+	4: [ ],
+	5: [ ],
+	6: [ ],
+	7: [
+		(5, 1)
 	]
 }
 
 # Make copy of the level defaults that can be changed as the game is running -
 # so that they arent permanently changed. Gets around python pass-by-name style.
-colornodesCopy = copy.deepcopy(colornodes)
-mixersCopy = copy.deepcopy(mixers)
-exitpointsCopy = copy.deepcopy(exitpoints)
+colornodesCopy = {}
+mixersCopy = {}
+exitpointsCopy = {}
+subtractorsCopy = {}
 
 
 """
@@ -181,19 +195,27 @@ exitpointsCopy = copy.deepcopy(exitpoints)
 """
 def updateDefaults(levelNum):
 	# Like above, refresh the copies by overwriting them:
-	colornodesCopy = copy.deepcopy(colornodes)
-	mixersCopy = copy.deepcopy(mixers)
-	exitpointsCopy = copy.deepcopy(exitpoints)
+	for i in range(1, len(colornodes) + 1):
+		colornodesCopy[i] = colornodes[i]
+
+	for i in range(1, len(mixers) + 1):
+		mixersCopy[i] = mixers[i]
+
+	for i in range(1, len(exitpoints) + 1):
+		exitpointsCopy[i] = exitpoints[i]
+
+	for i in range(1, len(subtractors) + 1):
+		subtractorsCopy[i] = subtractors[i]
 
 	# Dictionary of levels, constructed using the level defaults.
 	levelList = {
-		1: Level(surface, 1, 1, 100, width, height, colornodesCopy[1], mixersCopy[1], exitpointsCopy[1], obstacles[1]),
-		2: Level(surface, 1, 1, 100, width, height, colornodesCopy[2], mixersCopy[2], exitpointsCopy[2], obstacles[2]),
-		3: Level(surface, 3, 3, 100, width, height, colornodesCopy[3], mixersCopy[3], exitpointsCopy[3], obstacles[3]),
-		4: Level(surface, 1, 1, 100, width, height, colornodesCopy[4], mixersCopy[4], exitpointsCopy[4], obstacles[4]),
-		5: Level(surface, 2, 1, 100, width, height, colornodesCopy[5], mixersCopy[5], exitpointsCopy[5], obstacles[5]),
-		6: Level(surface, 4, 3, 100, width, height, colornodesCopy[6], mixersCopy[6], exitpointsCopy[6], obstacles[6]),
-		7: Level(surface, 6, 3, 100, width, height, colornodesCopy[7], mixersCopy[7], exitpointsCopy[7], obstacles[7]),
+		1: Level(surface, 1, 1, 100, width, height, colornodesCopy[1], mixersCopy[1], exitpointsCopy[1], obstacles[1], subtractorsCopy[1]),
+		2: Level(surface, 1, 1, 100, width, height, colornodesCopy[2], mixersCopy[2], exitpointsCopy[2], obstacles[2], subtractorsCopy[2]),
+		3: Level(surface, 3, 3, 100, width, height, colornodesCopy[3], mixersCopy[3], exitpointsCopy[3], obstacles[3], subtractorsCopy[3]),
+		4: Level(surface, 1, 1, 100, width, height, colornodesCopy[4], mixersCopy[4], exitpointsCopy[4], obstacles[4], subtractorsCopy[4]),
+		5: Level(surface, 2, 1, 100, width, height, colornodesCopy[5], mixersCopy[5], exitpointsCopy[5], obstacles[5], subtractorsCopy[5]),
+		6: Level(surface, 4, 3, 100, width, height, colornodesCopy[6], mixersCopy[6], exitpointsCopy[6], obstacles[6], subtractorsCopy[6]),
+		7: Level(surface, 6, 3, 100, width, height, colornodesCopy[7], mixersCopy[7], exitpointsCopy[7], obstacles[7], subtractorsCopy[7]),
 	}
 
 	# Lastly, return the level that has been reconstructed.
@@ -355,9 +377,9 @@ while running:
 
 		# DEBUG: Renders debug square on occupied tiles
 		# for x in range(-1, len(level.tiles)-1):
-		#	 for y in range(-1, len(level.tiles[x])-1):
-		#		 if level.tiles[x][y].occupied:
-		#			 level.tiles[x][y].renderDebugSquare()
+		# 	 for y in range(-1, len(level.tiles[x])-1):
+		# 		 if level.tiles[x][y].occupied:
+		# 			 level.tiles[x][y].renderDebugSquare()
 
 		# DEBUG: Renders debug square on solved tiles
 		# for x in range(-1, len(level.tiles)-1):
@@ -377,8 +399,8 @@ while running:
 							prevTileRef = tileUnderMouse
 							points.append(((level.x + level.tileSize * tileUnderMouse.entryPoint.col) + level.tileSize / 2,
 											(level.y + level.tileSize * tileUnderMouse.entryPoint.row) + level.tileSize / 2))
-							color = level.getTileByCoord(points[0]).colorNodeHue
-							print(color)
+							color = level.getTileByCoord(points[0]).color
+							print color
 
 					newTile = tileUnderMouse
 
@@ -417,7 +439,7 @@ while running:
 									 or (newTile is upTile)
 									 or (newTile is downTile)):
 										 if (not newTile.occupied) or newTile.mixer:
-											 if (not prevTileRef.mixer or firstTile) and (not prevTileRef.isExitPoint):
+											 if (not prevTileRef.mixer or firstTile) and (not prevTileRef.exitpoint) and (not prevTileRef.subtractor):
 												 if level.getTileByCoord(points[0]).mixer:
 													 #Tile is a mixer, and now color is being selected from it so it needs to be converted to a color node
 													 level.convertTileToColorNode(level.getTileByCoord(points[0]))
@@ -435,18 +457,21 @@ while running:
 
 				else:
 					if len(points) > 1:
-						# If final point in list is valid sticking point,
+						# If final point in list is valid ending point,
 						# append points to connected to draw them indefinitely
 						if (level.getTileByCoord(points[len(points)-1]).mixer
-						or (level.getTileByCoord(points[len(points)-1]).isExitPoint
-						and level.getTileByCoord(points[len(points)-1]).exitPointHue == level.getTileByCoord(points[0]).colorNodeHue)):
+						or (level.getTileByCoord(points[len(points)-1]).exitpoint
+						and level.getTileByCoord(points[len(points)-1]).color == level.getTileByCoord(points[0]).color)
+						or (level.getTileByCoord(points[len(points)-1]).subtractor
+						and len(level.getTileByCoord(points[len(points)-1]).connectingColors) <= 2)):
 							# only if the middle point of mixer is in points should connection happen
 							if len(points) > 1:
 								for point in points:
-									level.getTileByCoord(point).occupied = True
+									if level.getTileByCoord(point) is not level.getTileByCoord(points[len(points)-1]):
+										level.getTileByCoord(point).occupied = True
 
-								if level.getTileByCoord(pygame.mouse.get_pos()).isExitPoint:
-									level.getTileByCoord(pygame.mouse.get_pos()).solved = True
+								if level.getTileByCoord(points[len(points)-1]).exitpoint:
+									level.getTileByCoord(points[len(points)-1]).solved = True
 									for exitpoint in level.exitpoints:
 										if (exitpoint["col"] == level.getTileByCoord(points[len(points)-1]).col
 										and exitpoint["row"] == level.getTileByCoord(points[len(points)-1]).row):
@@ -458,6 +483,14 @@ while running:
 								connected.append(points)
 								colors.append(color)
 								level.getTileByCoord(points[len(points)-1]).connectingColors.append(color)
+
+								if (level.getTileByCoord(points[len(points)-1]).subtractor
+								and len(level.getTileByCoord(points[len(points)-1]).connectingColors) >= 2):
+									level.convertTileToColorNode(level.getTileByCoord(points[len(points)-1]))
+								elif (level.getTileByCoord(points[len(points)-1]).subtractor
+								and len(level.getTileByCoord(points[len(points)-1]).connectingColors) == 1):
+									level.getTileByCoord(points[len(points)-1]).outerColor = color
+
 								level.refreshEntryPoints()
 						else:
 							if wasMixer:
@@ -480,6 +513,7 @@ while running:
 
 		level.renderColorNodes()
 		level.renderMixers()
+		level.renderSubtractors()
 		level.renderExitPoints()
 
 		if solved:

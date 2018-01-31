@@ -5,7 +5,7 @@ from ColorNode import ColorNode
 import copy
 
 class Level:
-	def __init__(self, s, cols, rows, tileSize, screenWidth, screenHeight, colornodes, mixers, exitpoints, obstacles):
+	def __init__(self, s, cols, rows, tileSize, screenWidth, screenHeight, colornodes, mixers, exitpoints, obstacles, subtractors):
 		# Here's where I will get level dimensions and starting points / hues
 		self.cols = cols
 		self.rows = rows
@@ -30,6 +30,7 @@ class Level:
 		self.mixers = mixers
 		self.exitpoints = exitpoints
 		self.obstacles = obstacles
+		self.subtractors = subtractors
 
 		self.complete = False
 
@@ -50,8 +51,8 @@ class Level:
 
 		if self.colornodes:
 			for info in self.colornodes:
-				self.tiles[info["col"]][info["row"]].colorNodeHue = info["hue"]
-				self.tiles[info["col"]][info["row"]].isColorNode = True
+				self.tiles[info["col"]][info["row"]].color = info["hue"]
+				self.tiles[info["col"]][info["row"]].colornode = True
 				self.tiles[info["col"]][info["row"]].entryPoint = self.tiles[info["col"]][info["row"]]
 
 		if self.mixers:
@@ -60,14 +61,18 @@ class Level:
 
 		if self.exitpoints:
 			for info in self.exitpoints:
-				self.tiles[info["col"]][info["row"]].exitPointHue = info["hue"]
-				self.tiles[info["col"]][info["row"]].isExitPoint = True
+				self.tiles[info["col"]][info["row"]].color = info["hue"]
+				self.tiles[info["col"]][info["row"]].exitpoint = True
 				self.tiles[info["col"]][info["row"]].occupied = False
 				self.tiles[info["col"]][info["row"]].solved = False
 
 		if self.obstacles:
 			for obstacle in self.obstacles:
 				self.tiles[obstacle[0]][obstacle[1]].occupied = True
+
+		if self.subtractors:
+			for sub in self.subtractors:
+				self.tiles[sub[0]][sub[1]].subtractor = True
 
 	def renderColorNodes(self):
 		for info in self.colornodes:
@@ -87,24 +92,23 @@ class Level:
 		for obstacle in self.obstacles:
 			self.tiles[obstacle[0]][obstacle[1]].renderObstacle()
 
+	def renderSubtractors(self):
+		for sub in self.subtractors:
+			self.tiles[sub[0]][sub[1]].renderSubtractor()
+
 	def getTileByCoord(self, mousePos):
 		# Pass in x and y of mos pos, get tile obj under it
 		for y in range(-1, self.rows + 1):
 			for x in range(-1, self.cols + 1):
 				if self.tileSpan[x][y].collidepoint(mousePos):
 					return self.tiles[x][y]
-
 		return None
 
 	def convertTileToColorNode(self, tile):
 		tile.convertToColorNode()
-		#print self.colornodes
-		#self.colornodes.append()
 
 	def convertTileToMixer(self, tile):
 		tile.convertToMixer()
-		#print self.colornodes
-		# self.colornodes.append
 
 	def renderLevelLines(self):
 		for col in range(0, self.cols + 1):
@@ -123,17 +127,19 @@ class Level:
 							 self.lineWidth)
 
 	def refreshEntryPoints(self):
-		for x in range(-1, len(self.tiles)-1):
-			for y in range(-1, len(self.tiles[x])-1):
-				if self.tiles[x][y].mixer and len(self.tiles[x][y].connectingColors) > 0:
-					newColor = hues.average(self.tiles[x][y].connectingColors)
+		for mixer in self.mixers:
+			if len(self.tiles[mixer[0]][mixer[1]].connectingColors) == 1:
+				if self.tiles[mixer[0]][mixer[1]].entryPoint is None:
+					initialColor = hues.average(self.tiles[mixer[0]][mixer[1]].connectingColors)
+					self.tiles[mixer[0]][mixer[1]].entryPoint = self.tiles[mixer[0]][mixer[1]]
+					self.colornodes.append({"hue": initialColor, "col": mixer[0], "row": mixer[1]})
 
-					if self.tiles[x][y-1].entryPoint is None:
-						self.tiles[x][y].colorNodeHue = newColor
-						self.tiles[x][y].isColorNode = True
-						self.tiles[x][y].entryPoint = self.tiles[x][y]
-						self.colornodes.append({"hue": newColor, "col": x, "row": y})
-
+		for sub in self.subtractors:
+			if len(self.tiles[sub[0]][sub[1]].connectingColors) == 2:
+				if self.tiles[sub[0]][sub[1]].entryPoint is None:
+					initialColor = hues.subtract(self.tiles[sub[0]][sub[1]].connectingColors)
+					self.tiles[sub[0]][sub[1]].entryPoint = self.tiles[sub[0]][sub[1]]
+					self.colornodes.append({"hue": initialColor, "col": sub[0], "row": sub[1]})
 
 	def dict2D(self, cols, rows):
 		d = dict()
