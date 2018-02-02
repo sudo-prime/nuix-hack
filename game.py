@@ -42,6 +42,7 @@ clicking = False	  # Used to detect rising edge of mouse click, helps avoid unin
 prevClicking = False  # See above.
 solved = False		  # Whether or not the current puzzle has been solved.
 wasMixer = False	  # Whether the first node that was dragged from was a mixer to begin with.
+madeOccupied = []
 
 # Dict that holds an array of button objects, associated with the level ID on which they are displayed.
 buttons = {
@@ -86,7 +87,7 @@ colornodes = {
 	],
 	6: [
 		{"hue": hues.BLUE, "col": -1, "row": 1},
-		{"hue": hues.RED, "col": 4, "row": 1}
+		{"hue": hues.RED, "col": 5, "row": 1}
 	],
 	7: [
 		{"hue": hues.RED, "col": 3, "row": 0},
@@ -114,7 +115,7 @@ mixers = {
 	6: [
 		(0, 1),
 		(1, 2),
-		(3, 1)
+		(4, 1)
 	],
 	7: [
 		(1, 2),
@@ -132,7 +133,9 @@ obstacles = {
 	],
 	4: [ ],
 	5: [ ],
-	6: [ ],
+	6: [
+		(3, 1)
+	],
 	7: [ ]
 }
 
@@ -150,7 +153,7 @@ exitpoints = {
 		{"hue": Hue(255, 0, 0, 1), "col": 1, "row": -1, "solved": False}
 	],
 	4: [
-		{"hue": Hue(255, 128, 0, 2), "col": 0, "row": -1, "solved": False}
+		{"hue": hues.ORANGE, "col": 0, "row": -1, "solved": False}
 	],
 	5: [
 		{"hue": hues.YELLOW, "col": 0, "row": -1, "solved": False},
@@ -214,7 +217,7 @@ def updateDefaults(levelNum):
 		3: Level(surface, 3, 3, 100, width, height, colornodesCopy[3], mixersCopy[3], exitpointsCopy[3], obstacles[3], subtractorsCopy[3]),
 		4: Level(surface, 1, 1, 100, width, height, colornodesCopy[4], mixersCopy[4], exitpointsCopy[4], obstacles[4], subtractorsCopy[4]),
 		5: Level(surface, 2, 1, 100, width, height, colornodesCopy[5], mixersCopy[5], exitpointsCopy[5], obstacles[5], subtractorsCopy[5]),
-		6: Level(surface, 4, 3, 100, width, height, colornodesCopy[6], mixersCopy[6], exitpointsCopy[6], obstacles[6], subtractorsCopy[6]),
+		6: Level(surface, 5, 3, 100, width, height, colornodesCopy[6], mixersCopy[6], exitpointsCopy[6], obstacles[6], subtractorsCopy[6]),
 		7: Level(surface, 6, 3, 100, width, height, colornodesCopy[7], mixersCopy[7], exitpointsCopy[7], obstacles[7], subtractorsCopy[7]),
 	}
 
@@ -371,9 +374,9 @@ while running:
 
 		# DEBUG: Renders debug squares over entry points
 		# for x in range(-1, len(level.tiles)-1):
-		#	 for y in range(-1, len(level.tiles[x])-1):
-		#		 if level.tiles[x][y].entryPoint is not None:
-		#			 level.tiles[x][y].renderDebugSquare()
+		# 	 for y in range(-1, len(level.tiles[x])-1):
+		# 		 if level.tiles[x][y].entryPoint is not None:
+		# 			 level.tiles[x][y].renderDebugSquare()
 
 		# DEBUG: Renders debug square on occupied tiles
 		# for x in range(-1, len(level.tiles)-1):
@@ -383,15 +386,16 @@ while running:
 
 		# DEBUG: Renders debug square on solved tiles
 		# for x in range(-1, len(level.tiles)-1):
-		#	 for y in range(-1, len(level.tiles[x])-1):
-		#		 if level.tiles[x][y].solved:
-		#			 level.tiles[x][y].renderDebugSquare()
+		# 	 for y in range(-1, len(level.tiles[x])-1):
+		# 		 if level.tiles[x][y].solved:
+		# 			 level.tiles[x][y].renderDebugSquare()
 
 		if tileUnderMouse is not None: #if tile under mouse exists
 			tileUnderMouse.renderHover()
 			# Tile being clicked color change
-			if not solved:
-				if pygame.mouse.get_pressed()[0]: #if mouse is being held
+		if not solved:
+			if pygame.mouse.get_pressed()[0]: #if mouse is being held
+				if tileUnderMouse is not None:
 					tileUnderMouse.renderClick()
 					if tileUnderMouse.entryPoint is not None: #if tile under mouse is an entry point
 						if firstClick: #if it's the first time clicking the entry point
@@ -400,7 +404,6 @@ while running:
 							points.append(((level.x + level.tileSize * tileUnderMouse.entryPoint.col) + level.tileSize / 2,
 											(level.y + level.tileSize * tileUnderMouse.entryPoint.row) + level.tileSize / 2))
 							color = level.getTileByCoord(points[0]).color
-							print color
 
 					newTile = tileUnderMouse
 
@@ -438,11 +441,12 @@ while running:
 									 or (newTile is rightTile)
 									 or (newTile is upTile)
 									 or (newTile is downTile)):
-										 if (not newTile.occupied) or newTile.mixer:
+										 if (not newTile.occupied) or newTile.mixer or newTile.subtractor:
 											 if (not prevTileRef.mixer or firstTile) and (not prevTileRef.exitpoint) and (not prevTileRef.subtractor):
 												 if level.getTileByCoord(points[0]).mixer:
 													 #Tile is a mixer, and now color is being selected from it so it needs to be converted to a color node
 													 level.convertTileToColorNode(level.getTileByCoord(points[0]))
+													 madeOccupied.append(level.getTileByCoord(points[0]))
 													 wasMixer = True
 												 prevTile = newTile
 												 prevTileRef = newTile
@@ -450,22 +454,18 @@ while running:
 																(level.y + level.tileSize * tileUnderMouse.row) + level.tileSize / 2))
 												 firstClick = False
 
-					if len(points) > 1:
-						pygame.draw.lines(surface, color, False, points, 6)
-						for point in points:
-							pygame.draw.rect(surface, color, pygame.Rect(point[0]-2, point[1]-2, 6, 6))
-
-				else:
-					if len(points) > 1:
-						# If final point in list is valid ending point,
-						# append points to connected to draw them indefinitely
-						if (level.getTileByCoord(points[len(points)-1]).mixer
-						or (level.getTileByCoord(points[len(points)-1]).exitpoint
-						and level.getTileByCoord(points[len(points)-1]).color == level.getTileByCoord(points[0]).color)
-						or (level.getTileByCoord(points[len(points)-1]).subtractor
-						and len(level.getTileByCoord(points[len(points)-1]).connectingColors) <= 2)):
-							# only if the middle point of mixer is in points should connection happen
-							if len(points) > 1:
+			else:
+				if len(points) > 1:
+					# If final point in list is valid ending point,
+					# append points to connected to draw them indefinitely
+					if (level.getTileByCoord(points[len(points)-1]).mixer
+					or (level.getTileByCoord(points[len(points)-1]).exitpoint
+					and level.getTileByCoord(points[len(points)-1]).color == level.getTileByCoord(points[0]).color)
+					or (level.getTileByCoord(points[len(points)-1]).subtractor
+					and len(level.getTileByCoord(points[len(points)-1]).connectingColors) <= 2)):
+						# only if the middle point of mixer is in points should connection happen
+						if len(points) > 1:
+							if points not in connected:
 								for point in points:
 									if level.getTileByCoord(point) is not level.getTileByCoord(points[len(points)-1]):
 										level.getTileByCoord(point).occupied = True
@@ -483,25 +483,28 @@ while running:
 								connected.append(points)
 								colors.append(color)
 								level.getTileByCoord(points[len(points)-1]).connectingColors.append(color)
+								wasMixer = False
 
 								if (level.getTileByCoord(points[len(points)-1]).subtractor
 								and len(level.getTileByCoord(points[len(points)-1]).connectingColors) >= 2):
 									level.convertTileToColorNode(level.getTileByCoord(points[len(points)-1]))
+									madeOccupied.append(level.getTileByCoord(points[len(points)-1]))
 								elif (level.getTileByCoord(points[len(points)-1]).subtractor
 								and len(level.getTileByCoord(points[len(points)-1]).connectingColors) == 1):
 									level.getTileByCoord(points[len(points)-1]).outerColor = color
 
 								level.refreshEntryPoints()
-						else:
-							if wasMixer:
-								level.convertTileToMixer(level.getTileByCoord(points[0]))
-								wasMixer = False
+					else:
+						if wasMixer:
+							level.convertTileToMixer(level.getTileByCoord(points[0]))
+							madeOccupied.remove(level.getTileByCoord(points[0]))
+							wasMixer = False
 
-					points = []
-					firstClick = True
-					firstTile = False
-					prevTile = None
-					diagonal = False
+				points = []
+				firstClick = True
+				firstTile = False
+				prevTile = None
+				diagonal = False
 
 		if connected:
 			i = 0
@@ -510,6 +513,11 @@ while running:
 				for point in connection:
 					pygame.draw.rect(surface, colors[i], pygame.Rect(point[0]-2, point[1]-2, 6, 6))
 				i += 1
+
+		if len(points) > 1:
+			pygame.draw.lines(surface, color, False, points, 6)
+			for point in points:
+				pygame.draw.rect(surface, color, pygame.Rect(point[0]-2, point[1]-2, 6, 6))
 
 		level.renderColorNodes()
 		level.renderMixers()
@@ -538,6 +546,15 @@ while running:
 				prevTileRef = None
 				firstClick = True
 				level = updateDefaults(levelNum)
+				for x in range(-1, len(level.tiles)-1):
+					for y in range(-1, len(level.tiles[x])-1):
+						if (level.tiles[x][y].entryPoint is not None
+						and level.tiles[x][y].mixer
+						or  level.tiles[x][y].subtractor):
+							level.tiles[x][y].entryPoint = None
+				for exitpoint in exitpoints[levelNum]:
+					exitpoint["solved"] = False
+
 			if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
 				# If the user presses escape, refresh the level and return to the level select screen.
 				connected = []
@@ -550,6 +567,14 @@ while running:
 				prevTileRef = None
 				firstClick = True
 				level = updateDefaults(levelNum)
+				for x in range(-1, len(level.tiles)-1):
+					for y in range(-1, len(level.tiles[x])-1):
+						if (level.tiles[x][y].entryPoint is not None
+						and level.tiles[x][y].mixer
+						or  level.tiles[x][y].subtractor):
+							level.tiles[x][y].entryPoint = None
+				for exitpoint in exitpoints[levelNum]:
+					exitpoint["solved"] = False
 				levelNum = -1
 
 		pygame.display.flip()

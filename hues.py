@@ -3,7 +3,7 @@ from Hue import Hue
 import math
 
 RED =        Hue(255, 0, 0, 1)
-ORANGE =     Hue(255, 128, 0, 2)
+ORANGE =     Hue(255, 127, 0, 2)
 YELLOW =     Hue(255, 255, 0, 1)
 LIME =       Hue(128, 220, 0, 2)
 GREEN =      Hue(0, 255, 0, 2)
@@ -48,6 +48,21 @@ def average(colors):
 		return GRAY
 
 def subtract(colors):
+	if len(colors) >= 2:
+		# color[1] - color[0]
+		color0 = toRYB(colors[0].r, colors[0].g, colors[0].b)
+		color0 = maxSat(color0[0], color0[1], color0[2])
+		color1 = toRYB(colors[1].r, colors[1].g, colors[1].b)
+		color1 = maxSat(color1[0], color1[1], color1[2])
+		howMixed = colors[1].mixes - colors[0].mixes
+		r = max(color1[0] - color0[0], 0)
+		y = max(color1[1] - color0[1], 0)
+		b = max(color1[2] - color0[2], 0)
+		rgb = toRGB(r, y, b)
+		rgb = maxSat(rgb[0], rgb[1], rgb[2])
+		if rgb == (0, 0, 0):
+			return BLACK
+		return Hue(rgb[0], rgb[1], rgb[2], howMixed)
 	return GRAY
 
 def toRYB(r, g, b):
@@ -117,12 +132,12 @@ def toRGB(r, y, b):
 
 	iMaxGreen = max(iRed, iGreen, iBlue)
 
-	# if iMaxGreen > 0:
-	# 	iN = iMaxYellow / float(iMaxGreen)
-	#
-	# 	iRed   *= iN
-	# 	iGreen *= iN
-	# 	iBlue  *= iN
+	if iMaxGreen > 0:
+	 	iN = iMaxYellow / float(iMaxGreen)
+
+	 	iRed   *= iN
+	 	iGreen *= iN
+	 	iBlue  *= iN
 
 	iRed   += iWhite
 	iGreen += iWhite
@@ -132,6 +147,8 @@ def toRGB(r, y, b):
 
 def maxSat(r, g, b):
 	maxPrim = max(r, g, b)
+	if maxPrim == 0:
+		return (0,0,0)
 	factor = 255 / float(maxPrim)
 	r *= factor
 	g *= factor

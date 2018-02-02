@@ -34,6 +34,8 @@ class Level:
 
 		self.complete = False
 
+		self.madeOccupied = []
+
 		for y in range(-1, self.rows + 1):
 			for x in range(-1, self.cols + 1):
 				self.tiles[x][y] = Tile(self.x + self.tileSize * x,
@@ -54,6 +56,7 @@ class Level:
 				self.tiles[info["col"]][info["row"]].color = info["hue"]
 				self.tiles[info["col"]][info["row"]].colornode = True
 				self.tiles[info["col"]][info["row"]].entryPoint = self.tiles[info["col"]][info["row"]]
+				self.tiles[info["col"]][info["row"]].occupied = True
 
 		if self.mixers:
 			for mixer in self.mixers:
@@ -153,5 +156,4 @@ class Level:
 		for exitpoint in self.exitpoints:
 			if exitpoint["solved"] == False:
 				return False
-
 		return True

@@ -19,7 +19,7 @@ class Tile:
 		self.subtractor = False
 		self.mixer = False
 		self.color = hues.GRAY
-		self.outerColor = None
+		self.outerColor = hues.LIGHT_GRAY
 		self.connectingColors = []
 		self.colornode = False
 		self.solved = None
@@ -27,11 +27,11 @@ class Tile:
 	def printTileInfo(self):
 		print (self.mixer)
 		print (self.colornode)
-		print (self.entryPoint)
+		#print (self.entryPoint)
+		print (self.subtractor)
 		print (self.color)
-		print (self.solved)
+		#print (self.solved)
 		print (self.connectingColors)
-		print (self.subtractorColor)
 
 	def renderObstacle(self):
 		pygame.draw.rect(self.s, hues.MED_GRAY, pygame.Rect(self.x + 1, self.y + 1, self.size - 1, self.size - 1))
@@ -47,7 +47,11 @@ class Tile:
 
 	def renderColorNode(self):
 		if self.colornode:
-			pygame.draw.rect(self.s, self.color, pygame.Rect(self.x + 37, self.y + 37, self.size - 72, self.size - 72))
+			if self.outerColor is not hues.LIGHT_GRAY:
+				pygame.draw.rect(self.s, self.outerColor, pygame.Rect(self.x + 35, self.y + 35, self.size - 68, self.size - 68))
+				pygame.draw.rect(self.s, self.color, pygame.Rect(self.x + 41, self.y + 41, self.size - 80, self.size - 80))
+			if self.outerColor is hues.LIGHT_GRAY:
+				pygame.draw.rect(self.s, self.color, pygame.Rect(self.x + 37, self.y + 37, self.size - 72, self.size - 72))
 
 	def convertToColorNode(self):
 		if self.mixer:
@@ -63,6 +67,7 @@ class Tile:
 		self.mixer = True
 		self.colornode = False
 		self.subtractor = False
+		self.occupied = False
 		self.color = hues.average(self.connectingColors)
 
 	def renderMixer(self):
@@ -79,9 +84,18 @@ class Tile:
 			self.color = hues.subtract(self.connectingColors)
 			# Draw subtractor node, if the tile has one!
 			if self.subtractor:
-				if self.outerColor is not None:
-					pygame.draw.rect(self.s, self.outerColor, pygame.Rect(self.x + 31, self.y + 31, self.size - 60, self.size - 60))
-				pygame.draw.rect(self.s, self.color, pygame.Rect(self.x + 37, self.y + 37, self.size - 72, self.size - 72))
+				if self.outerColor is hues.LIGHT_GRAY:
+					pygame.draw.rect(self.s, hues.GRAY, pygame.Rect(self.x + 35, self.y + 35, self.size - 68, self.size - 68))
+					if self.color is hues.GRAY:
+						pygame.draw.rect(self.s, hues.MED_GRAY, pygame.Rect(self.x + 41, self.y + 41, self.size - 80, self.size - 80))
+					else:
+						pygame.draw.rect(self.s, self.color, pygame.Rect(self.x + 41, self.y + 41, self.size - 80, self.size - 80))
+				else:
+					pygame.draw.rect(self.s, self.outerColor, pygame.Rect(self.x + 35, self.y + 35, self.size - 68, self.size - 68))
+					if self.color is hues.GRAY:
+						pygame.draw.rect(self.s, hues.MED_GRAY, pygame.Rect(self.x + 41, self.y + 41, self.size - 80, self.size - 80))
+					else:
+						pygame.draw.rect(self.s, self.color, pygame.Rect(self.x + 41, self.y + 41, self.size - 80, self.size - 80))
 				pygame.draw.line(self.s, hues.WHITE, (self.middle[0] - 9, self.middle[1]), (self.middle[0] + 10, self.middle[1]), 6)
 
 	def renderExitPoint(self):
